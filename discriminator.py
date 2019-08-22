@@ -52,7 +52,6 @@ class Discriminator(nn.Module):
 
         x = torch.flatten(x, start_dim=1)
         x = self.fc(x).squeeze(1)
-        x = torch.sigmoid(x)
 
         return x
 

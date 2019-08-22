@@ -93,7 +93,7 @@ def accumulate(model_accumulator, model, decay=0.999):
 
 def downsample(images):
     return F.interpolate(
-        images, mode='bilinear', 
+        images, mode='bilinear',
         size=(SIZE // 4, SIZE // 4),
         align_corners=False
     )
@@ -122,7 +122,7 @@ def evaluate(model, val_loader):
 
 
 def main():
-    
+
     # tensorboard --logdir=summaries/ --port=6007
     writer = SummaryWriter(log_dir='summaries/')
 
@@ -168,6 +168,7 @@ def main():
             model.save_model(MODEL_NAME + f'_epoch_{e}')
 
     writer.close()
+
 
 if __name__ == '__main__':
     main()
