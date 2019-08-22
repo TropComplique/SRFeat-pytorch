@@ -65,6 +65,6 @@ def conv3x3(in_channels, out_channels, stride):
 
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, **params),
-        nn.BatchNorm2d(d),
+        nn.BatchNorm2d(out_channels),
         nn.LeakyReLU(0.2, inplace=True)
     )

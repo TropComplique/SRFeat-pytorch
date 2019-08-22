@@ -17,6 +17,7 @@ class Model:
 
         G = Generator(depth=128, num_blocks=16)
         D1 = Discriminator(3, image_size, depth=64)
+        image_size = (image_size[0] // 16, image_size[1] // 16)
         D2 = Discriminator(512, image_size, depth=64)
 
         def weights_init(m):
@@ -48,11 +49,8 @@ class Model:
             self.schedulers.append(LambdaLR(o, lr_lambda=lambda_rule))
 
         self.gan_loss = LSGAN()
-        self.vgg = Extractor()
+        self.vgg = Extractor().to(device)
         self.mse_loss = nn.MSELoss()
-
-        # a copy for exponential moving average
-        self.G_ema = copy.deepcopy(self.G)
 
     def train_step(self, A, B):
         """
@@ -126,9 +124,6 @@ class Model:
         for s in self.schedulers:
             s.step()
 
-        # running average of weights
-        accumulate(self.G_ema, self.G)
-
         loss_dict = {
             'mse_loss': mse_loss.item(),
             'gan_loss': gan_loss.item(),
@@ -140,14 +135,3 @@ class Model:
 
     def save_model(self, model_path):
         torch.save(self.G.state_dict(), model_path + '_generator.pth')
-        torch.save(self.G_ema.state_dict(), model_path + '_generator_ema.pth')
-
-
-def accumulate(model_accumulator, model, decay=0.999):
-    """Exponential moving average."""
-
-    params = dict(model.named_parameters())
-    ema_params = dict(model_accumulator.named_parameters())
-
-    for k in params.keys():
-        ema_params[k].data.mul_(decay).add_(1.0 - decay, params[k].data)

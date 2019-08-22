@@ -23,7 +23,7 @@ NUM_EPOCHS = 20
 SIZE = 296
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run00'
+MODEL_NAME = 'models_pretrained/run00'
 SAVE_EPOCH = 5
 EVAL_EPOCH = 1
 
@@ -48,9 +48,6 @@ class Model:
         self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-6)
         self.loss = nn.MSELoss()
 
-        # a copy for exponential moving average
-        self.G_ema = copy.deepcopy(self.G)
-
     def train_step(self, A, B):
         """
         The input tensors represent images
@@ -71,24 +68,10 @@ class Model:
         self.optimizer.step()
         self.scheduler.step()
 
-        # running average of weights
-        accumulate(self.G_ema, self.G)
-
         return loss.item()
 
     def save_model(self, model_path):
         torch.save(self.G.state_dict(), model_path + '_generator.pth')
-        torch.save(self.G_ema.state_dict(), model_path + '_generator_ema.pth')
-
-
-def accumulate(model_accumulator, model, decay=0.999):
-    """Exponential moving average."""
-
-    params = dict(model.named_parameters())
-    ema_params = dict(model_accumulator.named_parameters())
-
-    for k in params.keys():
-        ema_params[k].data.mul_(decay).add_(1.0 - decay, params[k].data)
 
 
 def downsample(images):

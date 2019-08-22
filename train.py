@@ -10,14 +10,14 @@ from torch.backends import cudnn
 cudnn.benchmark = True
 
 
-DATA = '/home/dan/datasets/DIV2K_train_HR/'
+DATA = '/home/dan/datasets/DIV2K/DIV2K_train_HR/'
 BATCH_SIZE = 8
-NUM_EPOCHS = 20
-SIZE = 296
+NUM_EPOCHS = 120
+SIZE = 256
 
 DEVICE = torch.device('cuda:0')
 MODEL_NAME = 'models/run00'
-SAVE_EPOCH = 5
+SAVE_EPOCH = 30
 
 
 def downsample(images):
@@ -43,6 +43,11 @@ def main():
         num_steps=num_steps,
         image_size=(SIZE, SIZE)
     )
+    generator_state = torch.load('models_pretrained/run00_epoch_20_generator.pth')
+    model.G.load_state_dict(generator_state)
+    model.G.train()
+    model.D1.train()
+    model.D2.train()
 
     # number of weight updates
     i = 0
