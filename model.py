@@ -14,11 +14,20 @@ from losses import LSGAN, Extractor
 class Model:
 
     def __init__(self, device, num_steps, image_size):
-
+        """
+        Arguments:
+            device: an instance of 'torch.device'.
+            num_steps: an integer, total number of iterations.
+            image_size: a tuple of integers (width, height).
+        """
         G = Generator(depth=128, num_blocks=16)
+
+        # for pixels
         D1 = Discriminator(3, image_size, depth=64)
-        image_size = (image_size[0] // 16, image_size[1] // 16)
-        D2 = Discriminator(512, image_size, depth=64)
+
+        # for features
+        w, h = image_size
+        D2 = Discriminator(512, (w // 16, h // 16), depth=64)
 
         def weights_init(m):
             if isinstance(m, nn.Conv2d):
@@ -29,9 +38,9 @@ class Model:
                 init.ones_(m.weight)
                 init.zeros_(m.bias)
 
-        self.G = G.apply(weights_init).to(device)
-        self.D1 = D1.apply(weights_init).to(device)
-        self.D2 = D2.apply(weights_init).to(device)
+        self.G = G.apply(weights_init).to(device).train()
+        self.D1 = D1.apply(weights_init).to(device).train()
+        self.D2 = D2.apply(weights_init).to(device).train()
 
         self.optimizer = {
             'G': optim.Adam(self.G.parameters(), lr=1e-4, betas=(0.5, 0.999)),
@@ -73,8 +82,6 @@ class Model:
         true_features = self.vgg(B)
         fake_features = self.vgg(B_restored)
 
-        mse_loss = self.mse_loss(true_features, fake_features)
-
         # RUN DISCRIMINATOR ON THE PIXELS
 
         fake_scores = self.D1(B_restored)
@@ -82,8 +89,6 @@ class Model:
 
         true_scores = self.D1(B)
         true_loss = self.gan_loss(true_scores, True)
-
-        gan_loss = self.gan_loss(fake_scores, True)
 
         # RUN DISCRIMINATOR ON THE FEATURES
 
@@ -93,23 +98,12 @@ class Model:
         true_scores = self.D2(true_features)
         true_loss_features = self.gan_loss(true_scores, True)
 
-        gan_loss_features = self.gan_loss(fake_scores, True)
+        # UPDATE DISCRIMINATOR
 
-        # COMPUTE LOSSES
+        d1_loss = 0.5 * (fake_loss + true_loss)
+        d2_loss = 0.5 * (fake_loss_features + true_loss_features)
+        discriminator_loss = 0.5 * (d2_loss + d2_loss)
 
-        discriminator_loss = 0.25 * (fake_loss_features + true_loss_features + fake_loss + true_loss)
-        generator_loss = mse_loss + 1e-3 * (gan_loss + gan_loss_features)
-
-        self.D1.requires_grad_(False)
-        self.D2.requires_grad_(False)
-        self.G.requires_grad_(True)
-
-        self.optimizer['G'].zero_grad()
-        generator_loss.backward(retain_graph=True)
-        self.optimizer['G'].step()
-
-        self.D1.requires_grad_(True)
-        self.D2.requires_grad_(True)
         self.G.requires_grad_(False)
 
         self.optimizer['D1'].zero_grad()
@@ -118,7 +112,27 @@ class Model:
         self.optimizer['D1'].step()
         self.optimizer['D2'].step()
 
+        # UPDATE GENERATOR
+
         self.G.requires_grad_(True)
+        self.D1.requires_grad_(False)
+        self.D2.requires_grad_(False)
+
+        fake_scores = self.D1(B_restored)
+        gan_loss = self.gan_loss(fake_scores, True)
+
+        fake_scores = self.D2(fake_features)
+        gan_loss_features = self.gan_loss(fake_scores, True)
+
+        mse_loss = self.mse_loss(true_features, fake_features)
+        generator_loss = mse_loss + 1e-3 * (gan_loss + gan_loss_features)
+
+        self.optimizer['G'].zero_grad()
+        generator_loss.backward()
+        self.optimizer['G'].step()
+
+        self.D1.requires_grad_(True)
+        self.D2.requires_grad_(True)
 
         # decay the learning rate
         for s in self.schedulers:
@@ -129,7 +143,9 @@ class Model:
             'gan_loss': gan_loss.item(),
             'gan_loss_features': gan_loss_features.item(),
             'discriminator_loss': discriminator_loss.item(),
-            'generator_loss': generator_loss.item()
+            'generator_loss': generator_loss.item(),
+            'd1_loss': d1_loss.item(),
+            'd2_loss': d2_loss.item()
         }
         return loss_dict
 

@@ -23,9 +23,12 @@ NUM_EPOCHS = 20
 SIZE = 296
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models_pretrained/run00'
+MODEL_NAME = 'models/run00'
 SAVE_EPOCH = 5
 EVAL_EPOCH = 1
+
+LOG_DIR = 'summaries/run00'
+# tensorboard --logdir=summaries/run00 --port=6007
 
 
 class Model:
@@ -106,9 +109,7 @@ def evaluate(model, val_loader):
 
 def main():
 
-    # tensorboard --logdir=summaries/ --port=6007
-    writer = SummaryWriter(log_dir='summaries/')
-
+    writer = SummaryWriter(log_dir=LOG_DIR)
     train_dataset = Images(TRAIN_DATA, SIZE, is_training=True)
     val_dataset = Images(VALIDATION_DATA, SIZE, is_training=False)
 

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from input_pipeline import Images
 from model import Model
@@ -12,12 +13,16 @@ cudnn.benchmark = True
 
 DATA = '/home/dan/datasets/DIV2K/DIV2K_train_HR/'
 BATCH_SIZE = 8
-NUM_EPOCHS = 120
+NUM_EPOCHS = 1000
 SIZE = 256
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run00'
-SAVE_EPOCH = 30
+MODEL_NAME = 'models/run01'
+CHECKPOINT = 'models/run00_epoch_20_generator.pth'
+SAVE_EPOCH = 100
+
+LOG_DIR = 'summaries/run01'
+# tensorboard --logdir=summaries/run01 --port=6007
 
 
 def downsample(images):
@@ -30,7 +35,8 @@ def downsample(images):
 
 def main():
 
-    dataset = Images(DATA, SIZE, is_training=True)
+    writer = SummaryWriter(log_dir=LOG_DIR)
+    dataset = Images(DATA, SIZE, is_training=True, downsample=True)
     data_loader = DataLoader(
         dataset=dataset, batch_size=BATCH_SIZE,
         shuffle=True, num_workers=4,
@@ -38,16 +44,9 @@ def main():
     )
     num_steps = NUM_EPOCHS * (len(dataset) // BATCH_SIZE)
 
-    model = Model(
-        device=DEVICE,
-        num_steps=num_steps,
-        image_size=(SIZE, SIZE)
-    )
-    generator_state = torch.load('models_pretrained/run00_epoch_20_generator.pth')
+    model = Model(DEVICE, num_steps, image_size=(SIZE, SIZE))
+    generator_state = torch.load(CHECKPOINT)
     model.G.load_state_dict(generator_state)
-    model.G.train()
-    model.D1.train()
-    model.D2.train()
 
     # number of weight updates
     i = 0
@@ -61,8 +60,9 @@ def main():
             i += 1
             losses = model.train_step(A, B)
 
-            losses = {n: round(v, 4) for n, v in losses.items()}
-            print(e, i, losses)
+            print(e, i)
+            for n, v in losses.items():
+                writer.add_scalar(f'losses/{n}', v, i)
 
         if e % SAVE_EPOCH == 0:
             model.save_model(MODEL_NAME + f'_epoch_{e}')
