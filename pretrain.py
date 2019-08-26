@@ -10,6 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from input_pipeline import Images
 from generator import Generator
+from losses import Extractor
 
 from torch.backends import cudnn
 cudnn.benchmark = True
@@ -20,14 +21,14 @@ VALIDATION_DATA = '/mnt/COCO/images/val2017_only_big/'
 
 BATCH_SIZE = 8
 NUM_EPOCHS = 20
-SIZE = 296
+SIZE = 288
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run00'
+MODEL_NAME = 'models/run02'
 SAVE_EPOCH = 5
 EVAL_EPOCH = 1
 
-LOG_DIR = 'summaries/run00'
+LOG_DIR = 'summaries/run02'
 # tensorboard --logdir=summaries/run00 --port=6007
 
 
@@ -47,8 +48,9 @@ class Model:
         G = Generator(depth=128, num_blocks=16)
         self.G = G.apply(weights_init).to(device)
 
-        self.optimizer = optim.Adam(self.G.parameters(), lr=1e-4, betas=(0.5, 0.999))
+        self.optimizer = optim.Adam(self.G.parameters(), lr=7e-4, betas=(0.5, 0.999), amsgrad=True)
         self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-6)
+        self.vgg = Extractor().to(device)
         self.loss = nn.MSELoss()
 
     def train_step(self, A, B):
@@ -64,14 +66,18 @@ class Model:
         """
 
         B_restored = self.G(A)
-        loss = self.loss(B_restored, B)
+        x = self.vgg(B)
+        y = self.vgg(B_restored)
+        perceptual = self.loss(x, y)
+        mse = self.loss(B, B_restored)
+        loss = perceptual + 0.01 * mse
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
         self.scheduler.step()
 
-        return loss.item()
+        return {'total_loss': loss.item(), 'mse': mse.item(), 'perceptual': perceptual.item()}
 
     def save_model(self, model_path):
         torch.save(self.G.state_dict(), model_path + '_generator.pth')
@@ -138,15 +144,16 @@ def main():
             A = downsample(B)
 
             i += 1
-            loss = model.train_step(A, B)
+            losses = model.train_step(A, B)
 
-            print(f'epoch {e}, iteration {i}, loss {round(loss, 4)}')
-            writer.add_scalars('loss', {'train': loss}, i)
+            print(f'epoch {e}, iteration {i}')
+            writer.add_scalars('mse', {'train': losses['mse']}, i)
+            writer.add_scalar('losses/perceptual', losses['perceptual'], i)
+            writer.add_scalar('losses/total_loss', losses['total_loss'], i)
 
         if e % EVAL_EPOCH == 0:
             loss = evaluate(model, val_loader)
-            print('validation loss', round(loss, 4))
-            writer.add_scalars('loss', {'val': loss}, i)
+            writer.add_scalars('mse', {'val': loss}, i)
 
         if e % SAVE_EPOCH == 0:
             model.save_model(MODEL_NAME + f'_epoch_{e}')

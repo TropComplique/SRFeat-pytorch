@@ -23,6 +23,7 @@ class Discriminator(nn.Module):
             conv3x3(4 * depth, 4 * depth, stride=2),
             conv3x3(4 * depth, 8 * depth, stride=1),
             conv3x3(8 * depth, 8 * depth, stride=2),
+            #nn.Conv2d(8 * depth, 1, kernel_size=1)
         )
 
         w, h = image_size

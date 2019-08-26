@@ -17,11 +17,11 @@ NUM_EPOCHS = 1000
 SIZE = 256
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run01'
-CHECKPOINT = 'models/run00_epoch_20_generator.pth'
+MODEL_NAME = 'models/run04'
+CHECKPOINT = 'models/run02_epoch_20_generator.pth'
 SAVE_EPOCH = 100
 
-LOG_DIR = 'summaries/run01'
+LOG_DIR = 'summaries/run04'
 # tensorboard --logdir=summaries/run01 --port=6007
 
 
@@ -36,7 +36,7 @@ def downsample(images):
 def main():
 
     writer = SummaryWriter(log_dir=LOG_DIR)
-    dataset = Images(DATA, SIZE, is_training=True, downsample=True)
+    dataset = Images(DATA, SIZE, is_training=True, downsample=True, preload=True)
     data_loader = DataLoader(
         dataset=dataset, batch_size=BATCH_SIZE,
         shuffle=True, num_workers=4,
@@ -60,7 +60,7 @@ def main():
             i += 1
             losses = model.train_step(A, B)
 
-            print(e, i)
+            print(f'epoch {e}, iteration {i}')
             for n, v in losses.items():
                 writer.add_scalar(f'losses/{n}', v, i)
 

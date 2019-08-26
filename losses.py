@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models import vgg19
 
 
@@ -16,11 +17,13 @@ class LSGAN(nn.Module):
         Returns:
             a float tensor with shape [].
         """
-
+        
         if is_real:
-            return sum(torch.pow(x - 1.0, 2).mean() for x in scores)
+            target = torch.ones_like(scores)
+            return F.binary_cross_entropy_with_logits(scores, target)
 
-        return sum(torch.pow(x, 2).mean() for x in scores)
+        target = torch.zeros_like(scores)
+        return F.binary_cross_entropy_with_logits(scores, target)
 
 
 class Extractor(nn.Module):
@@ -32,7 +35,9 @@ class Extractor(nn.Module):
         features = vgg.features
 
         # remove the last max pooling layer
+        #self.features = features[:9]# relu2_2
         self.features = features[:-1]
+        print(self.features)
 
         for p in self.features.parameters():
             p.requires_grad = False

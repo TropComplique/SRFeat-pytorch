@@ -84,7 +84,7 @@ class Model:
 
         # RUN DISCRIMINATOR ON THE PIXELS
 
-        fake_scores = self.D1(B_restored)
+        fake_scores = self.D1(B_restored.detach())
         fake_loss = self.gan_loss(fake_scores, False)
 
         true_scores = self.D1(B)
@@ -92,7 +92,7 @@ class Model:
 
         # RUN DISCRIMINATOR ON THE FEATURES
 
-        fake_scores = self.D2(fake_features)
+        fake_scores = self.D2(fake_features.detach())
         fake_loss_features = self.gan_loss(fake_scores, False)
 
         true_scores = self.D2(true_features)
@@ -102,9 +102,7 @@ class Model:
 
         d1_loss = 0.5 * (fake_loss + true_loss)
         d2_loss = 0.5 * (fake_loss_features + true_loss_features)
-        discriminator_loss = 0.5 * (d2_loss + d2_loss)
-
-        self.G.requires_grad_(False)
+        discriminator_loss = 0.5 * (d1_loss + d2_loss)
 
         self.optimizer['D1'].zero_grad()
         self.optimizer['D2'].zero_grad()
@@ -114,7 +112,6 @@ class Model:
 
         # UPDATE GENERATOR
 
-        self.G.requires_grad_(True)
         self.D1.requires_grad_(False)
         self.D2.requires_grad_(False)
 
@@ -124,8 +121,8 @@ class Model:
         fake_scores = self.D2(fake_features)
         gan_loss_features = self.gan_loss(fake_scores, True)
 
-        mse_loss = self.mse_loss(true_features, fake_features)
-        generator_loss = mse_loss + 1e-3 * (gan_loss + gan_loss_features)
+        mse_features_loss = self.mse_loss(true_features, fake_features)
+        generator_loss = mse_features_loss + 1e-1 * (gan_loss + gan_loss_features)
 
         self.optimizer['G'].zero_grad()
         generator_loss.backward()
@@ -139,7 +136,8 @@ class Model:
             s.step()
 
         loss_dict = {
-            'mse_loss': mse_loss.item(),
+            'mse_features_loss': mse_features_loss.item(),
+            'mse': self.mse_loss(B, B_restored).item(),
             'gan_loss': gan_loss.item(),
             'gan_loss_features': gan_loss_features.item(),
             'discriminator_loss': discriminator_loss.item(),
