@@ -59,8 +59,8 @@ class Images(Dataset):
 
         if self.downsample:
 
-            w, h = image.size
             r = random.choice([1, 2, 3])
+            w, h = image.size
             w, h = w // r, h // r
 
             if r > 1 and w >= self.size and h >= self.size:

@@ -50,7 +50,7 @@ class Model:
 
         self.optimizer = optim.Adam(self.G.parameters(), lr=7e-4, betas=(0.5, 0.999), amsgrad=True)
         self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-6)
-        self.vgg = Extractor().to(device)
+        self.vgg = Extractor(feature='relu2_2').to(device)
         self.loss = nn.MSELoss()
 
     def train_step(self, A, B):
@@ -64,11 +64,12 @@ class Model:
         Returns:
             a float number.
         """
-
         B_restored = self.G(A)
+
         x = self.vgg(B)
         y = self.vgg(B_restored)
         perceptual = self.loss(x, y)
+
         mse = self.loss(B, B_restored)
         loss = perceptual + 0.01 * mse
 

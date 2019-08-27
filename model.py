@@ -122,7 +122,7 @@ class Model:
         gan_loss_features = self.gan_loss(fake_scores, True)
 
         mse_features_loss = self.mse_loss(true_features, fake_features)
-        generator_loss = mse_features_loss + 1e-1 * (gan_loss + gan_loss_features)
+        generator_loss = mse_features_loss + 1e-2 * (gan_loss + gan_loss_features)
 
         self.optimizer['G'].zero_grad()
         generator_loss.backward()
