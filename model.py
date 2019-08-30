@@ -30,7 +30,7 @@ class Model:
         D2 = Discriminator(512, (w // 16, h // 16), depth=64)
 
         def weights_init(m):
-            if isinstance(m, nn.Conv2d):
+            if isinstance(m, (nn.Conv2d, nn.Linear)):
                 init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     init.zeros_(m.bias)

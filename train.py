@@ -12,7 +12,7 @@ cudnn.benchmark = True
 
 
 DATA = '/home/dan/datasets/DIV2K/DIV2K_train_HR/'
-BATCH_SIZE = 8
+BATCH_SIZE = 10
 NUM_EPOCHS = 1000
 SIZE = 256
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models import vgg19
 
 
@@ -18,9 +19,13 @@ class LSGAN(nn.Module):
         """
 
         if is_real:
-            return torch.pow(scores - 1.0, 2).mean()
+            target = torch.ones_like(scores)
+            return F.binary_cross_entropy_with_logits(scores, target)
+            # return torch.pow(scores - 1.0, 2).mean()
 
-        return torch.pow(scores, 2).mean()
+        target = torch.zeros_like(scores)
+        return F.binary_cross_entropy_with_logits(scores, target)
+        # return torch.pow(scores, 2).mean()
 
 
 class Extractor(nn.Module):
