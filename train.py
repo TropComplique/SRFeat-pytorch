@@ -1,3 +1,5 @@
+import os
+import shutil
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -23,6 +25,9 @@ SAVE_EPOCH = 100
 
 LOG_DIR = 'summaries/run04'
 # tensorboard --logdir=summaries/run01 --port=6007
+
+shutil.rmtree(LOG_DIR, ignore_errors=True)
+os.makedirs(LOG_DIR)
 
 
 def downsample(images):

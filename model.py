@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from generator import Generator
 from discriminator import Discriminator
-from losses import LSGAN, Extractor
+from losses import GAN, Extractor
 
 
 class Model:
@@ -57,7 +57,7 @@ class Model:
         for o in self.optimizer.values():
             self.schedulers.append(LambdaLR(o, lr_lambda=lambda_rule))
 
-        self.gan_loss = LSGAN()
+        self.gan_loss = GAN()
         self.vgg = Extractor().to(device)
         self.mse_loss = nn.MSELoss()
 
@@ -122,7 +122,7 @@ class Model:
         gan_loss_features = self.gan_loss(fake_scores, True)
 
         mse_features_loss = self.mse_loss(true_features, fake_features)
-        generator_loss = mse_features_loss + 1e-2 * (gan_loss + gan_loss_features)
+        generator_loss = mse_features_loss + 1e-3 * (gan_loss + gan_loss_features)
 
         self.optimizer['G'].zero_grad()
         generator_loss.backward()
