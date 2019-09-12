@@ -49,8 +49,8 @@ class Model:
         }
 
         def lambda_rule(i):
-            decay = num_steps // 2
-            m = 1.0 if i < decay else 1.0 - (i - decay) / decay
+            decay = num_steps // 3
+            m = 1.0 if i < decay else 1.0 - (i - decay) / (num_steps - decay)
             return max(m, 0.0)
 
         self.schedulers = []
@@ -122,7 +122,7 @@ class Model:
         gan_loss_features = self.gan_loss(fake_scores, True)
 
         mse_features_loss = self.mse_loss(true_features, fake_features)
-        generator_loss = mse_features_loss + 1e-2 * (gan_loss + gan_loss_features)
+        generator_loss = mse_features_loss + 1e-3 * (gan_loss + gan_loss_features)
 
         self.optimizer['G'].zero_grad()
         generator_loss.backward()
