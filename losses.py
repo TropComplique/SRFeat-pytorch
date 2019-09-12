@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torchvision.models import vgg19
 
 
-class LSGAN(nn.Module):
+class GAN(nn.Module):
 
     def __init__(self):
         super(LSGAN, self).__init__()
