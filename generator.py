@@ -69,7 +69,7 @@ class ResnetBlock(nn.Module):
 
         self.conv1 = nn.Conv2d(d, d, kernel_size=3, bias=False, padding=1)
         self.bn1 = nn.BatchNorm2d(d)
-        self.relu1 = nn.LeakyReLU(0.2, inplace=False)
+        self.relu1 = nn.LeakyReLU(0.2, inplace=True)
 
         self.conv2 = nn.Conv2d(d, d, kernel_size=3, bias=False, padding=1)
         self.bn2 = nn.BatchNorm2d(d)

@@ -1,5 +1,13 @@
 import torch
 import torch.nn as nn
+from torch.nn.utils import spectral_norm
+
+
+USE_SN = False
+
+
+def normalization(module):
+    return spectral_norm(module) if USE_SN else module
 
 
 class Discriminator(nn.Module):
@@ -14,7 +22,7 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.layers = nn.Sequential(
-            nn.Conv2d(in_channels, depth, kernel_size=3, padding=1),
+            normalization(nn.Conv2d(in_channels, depth, kernel_size=3, padding=1)),
             nn.LeakyReLU(0.2, inplace=True),
             conv3x3(depth, depth, stride=2),
             conv3x3(depth, 2 * depth, stride=1),
@@ -34,9 +42,9 @@ class Discriminator(nn.Module):
         in_features = 8 * depth * area
 
         self.fc = nn.Sequential(
-            nn.Linear(in_features, 1024),
+            normalization(nn.Linear(in_features, 1024)),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(1024, 1)
+            normalization(nn.Linear(1024, 1))
         )
 
     def forward(self, x):
@@ -47,7 +55,7 @@ class Discriminator(nn.Module):
         Arguments:
             x: a float tensor with shape [b, 3, h, w].
         Returns:
-            a float tensor with shape [b, h / 16, w / 16].
+            a float tensor with shape [b].
         """
 
         x = 2.0 * x - 1.0
@@ -67,7 +75,7 @@ def conv3x3(in_channels, out_channels, stride):
     }
 
     return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, **params),
+        normalization(nn.Conv2d(in_channels, out_channels, **params)),
         nn.BatchNorm2d(out_channels),
         nn.LeakyReLU(0.2, inplace=True)
     )

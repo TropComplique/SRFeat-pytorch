@@ -22,16 +22,19 @@ class Model:
         """
         G = Generator(depth=128, num_blocks=16)
 
+        w, h = image_size
+        features_size = (w // 16, h // 16)
+        # because vgg features have stride 16
+
         # for pixels
         D1 = Discriminator(3, image_size, depth=64)
 
         # for features
-        w, h = image_size
-        D2 = Discriminator(512, (w // 16, h // 16), depth=64)
+        D2 = Discriminator(512, features_size, depth=64)
 
         def weights_init(m):
             if isinstance(m, (nn.Conv2d, nn.Linear)):
-                init.normal_(m.weight, std=0.01)
+                init.normal_(m.weight, std=0.1)
                 if m.bias is not None:
                     init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -51,7 +54,7 @@ class Model:
         def lambda_rule(i):
             decay = num_steps // 3
             m = 1.0 if i < decay else 1.0 - (i - decay) / (num_steps - decay)
-            return max(m, 0.0)
+            return max(m, 1e-3)
 
         self.schedulers = []
         for o in self.optimizer.values():

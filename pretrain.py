@@ -1,5 +1,4 @@
 import torch
-import copy
 import torch.nn.init as init
 import torch.nn as nn
 import torch.nn.functional as F
@@ -15,8 +14,8 @@ from torch.backends import cudnn
 cudnn.benchmark = True
 
 
-TRAIN_DATA = '/mnt/COCO/images/train2017_only_big/'
-VALIDATION_DATA = '/mnt/COCO/images/val2017_only_big/'
+TRAIN_DATA = '/home/dan/datasets/COCO/images/train2017/'
+VALIDATION_DATA = '/home/dan/datasets/COCO/images/val2017/'
 
 BATCH_SIZE = 8
 NUM_EPOCHS = 20
@@ -24,11 +23,9 @@ SIZE = 296
 
 DEVICE = torch.device('cuda:0')
 MODEL_NAME = 'models/run00'
+LOG_DIR = 'summaries/run00'
 SAVE_EPOCH = 5
 EVAL_EPOCH = 1
-
-LOG_DIR = 'summaries/run00'
-# tensorboard --logdir=summaries/run00 --port=6007
 
 
 class Model:
@@ -37,7 +34,7 @@ class Model:
 
         def weights_init(m):
             if isinstance(m, nn.Conv2d):
-                init.normal_(m.weight, std=0.01)
+                init.normal_(m.weight, std=0.1)
                 if m.bias is not None:
                     init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -48,7 +45,7 @@ class Model:
         self.G = G.apply(weights_init).to(device)
 
         self.optimizer = optim.Adam(self.G.parameters(), lr=1e-4, betas=(0.5, 0.999))
-        self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-6)
+        self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-3)
         self.loss = nn.MSELoss()
 
     def train_step(self, A, B):

@@ -72,4 +72,12 @@ class Images(Dataset):
         name = self.names[i]
         path = os.path.join(self.folder, name)
         image = Image.open(path).convert('RGB')
+
+        w, h = image.size
+        if w < self.size or h < self.size:
+            resizer = transforms.Resize(self.size, Image.LANCZOS)
+            image = resizer(image)
+            print('warning: small image!')
+            # this happens very rarely
+
         return image

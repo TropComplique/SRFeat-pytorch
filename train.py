@@ -19,12 +19,11 @@ NUM_EPOCHS = 1500
 SIZE = 256
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run04'
+MODEL_NAME = 'models/run01'
+LOG_DIR = 'summaries/run01'
 CHECKPOINT = 'models/run00_epoch_20_generator.pth'
 SAVE_EPOCH = 100
 
-LOG_DIR = 'summaries/run04'
-# tensorboard --logdir=summaries/run01 --port=6007
 
 shutil.rmtree(LOG_DIR, ignore_errors=True)
 os.makedirs(LOG_DIR)
