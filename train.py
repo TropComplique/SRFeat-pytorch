@@ -14,13 +14,13 @@ cudnn.benchmark = True
 
 
 DATA = '/home/dan/datasets/DIV2K/DIV2K_train_HR/'
-BATCH_SIZE = 10
+BATCH_SIZE = 8
 NUM_EPOCHS = 1500
 SIZE = 256
 
 DEVICE = torch.device('cuda:0')
-MODEL_NAME = 'models/run01'
-LOG_DIR = 'summaries/run01'
+MODEL_NAME = 'models/run03' # 01 - baseline, just 02 - add SN, 03 - sn + r1, b = 10 -> 8
+LOG_DIR = 'summaries/run03'
 CHECKPOINT = 'models/run00_epoch_20_generator.pth'
 SAVE_EPOCH = 100
 

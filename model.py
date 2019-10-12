@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from torch.optim.lr_scheduler import LambdaLR
+from torch.autograd import grad
 
 from generator import Generator
 from discriminator import Discriminator
@@ -89,23 +90,33 @@ class Model:
 
         fake_scores = self.D1(B_restored.detach())
         fake_loss = self.gan_loss(fake_scores, False)
+        
+        B.requires_grad = True
+        true_features.requires_grad = True
 
-        true_scores = self.D1(B)
-        true_loss = self.gan_loss(true_scores, True)
+        true_scores1 = self.D1(B)
+        true_loss = self.gan_loss(true_scores1, True)
 
         # RUN DISCRIMINATOR ON THE FEATURES
 
         fake_scores = self.D2(fake_features.detach())
         fake_loss_features = self.gan_loss(fake_scores, False)
-
-        true_scores = self.D2(true_features)
-        true_loss_features = self.gan_loss(true_scores, True)
+        
+        true_scores2 = self.D2(true_features)
+        true_loss_features = self.gan_loss(true_scores2, True)
 
         # UPDATE DISCRIMINATOR
+        b = A.size(0)
+        g1 = grad(true_scores1.sum(), B, create_graph=True)[0]
+        g2 = grad(true_scores2.sum(), true_features, create_graph=True)[0]
+        # it has shape [b, 3, h, w]
+
+        R1_1 = 0.5 * g1.view(b, -1).norm(p=2, dim=1).pow(2).mean(0)
+        R1_2 = 0.5 * g2.view(b, -1).norm(p=2, dim=1).pow(2).mean(0)
 
         d1_loss = 0.5 * (fake_loss + true_loss)
         d2_loss = 0.5 * (fake_loss_features + true_loss_features)
-        discriminator_loss = 0.5 * (d1_loss + d2_loss)
+        discriminator_loss = 0.5 * (d1_loss + d2_loss) + 10.0 * (R1_1 + R1_2)
 
         self.optimizer['D1'].zero_grad()
         self.optimizer['D2'].zero_grad()
@@ -146,7 +157,9 @@ class Model:
             'discriminator_loss': discriminator_loss.item(),
             'generator_loss': generator_loss.item(),
             'd1_loss': d1_loss.item(),
-            'd2_loss': d2_loss.item()
+            'd2_loss': d2_loss.item(),
+            'R1_penalty_d1': R1_1.item(),
+            'R1_penalty_d2': R1_2.item(),
         }
         return loss_dict
 

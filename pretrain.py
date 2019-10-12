@@ -17,7 +17,7 @@ cudnn.benchmark = True
 TRAIN_DATA = '/home/dan/datasets/COCO/images/train2017/'
 VALIDATION_DATA = '/home/dan/datasets/COCO/images/val2017/'
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 NUM_EPOCHS = 20
 SIZE = 296
 
@@ -34,7 +34,7 @@ class Model:
 
         def weights_init(m):
             if isinstance(m, nn.Conv2d):
-                init.normal_(m.weight, std=0.1)
+                init.normal_(m.weight, std=0.01)
                 if m.bias is not None:
                     init.zeros_(m.bias)
             elif isinstance(m, nn.BatchNorm2d):
@@ -44,7 +44,7 @@ class Model:
         G = Generator(depth=128, num_blocks=16)
         self.G = G.apply(weights_init).to(device)
 
-        self.optimizer = optim.Adam(self.G.parameters(), lr=1e-4, betas=(0.5, 0.999))
+        self.optimizer = optim.Adam(self.G.parameters(), lr=2e-4, betas=(0.5, 0.999), amsgrad=True)
         self.scheduler = CosineAnnealingLR(self.optimizer, num_steps, eta_min=1e-3)
         self.loss = nn.MSELoss()
 

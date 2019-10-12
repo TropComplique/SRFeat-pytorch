@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn.utils import spectral_norm
 
 
-USE_SN = False
+USE_SN = True
 
 
 def normalization(module):

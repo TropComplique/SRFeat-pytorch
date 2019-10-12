@@ -9,6 +9,9 @@ class Images(Dataset):
 
     def __init__(self, folder, size, is_training, downsample=False, preload=False):
         """
+        I assume that all images in the
+        folder have size at least `size`.
+
         Arguments:
             folder: a string, the path to a folder with images.
             size: an integer.
@@ -72,12 +75,4 @@ class Images(Dataset):
         name = self.names[i]
         path = os.path.join(self.folder, name)
         image = Image.open(path).convert('RGB')
-
-        w, h = image.size
-        if w < self.size or h < self.size:
-            resizer = transforms.Resize(self.size, Image.LANCZOS)
-            image = resizer(image)
-            print('warning: small image!')
-            # this happens very rarely
-
         return image
